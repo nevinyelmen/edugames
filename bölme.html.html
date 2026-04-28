@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bölme Yarışı - Akıllı Tahta Fix</title>
+    <style>
+        :root {
+            --bg: #2D3436;
+            --p1: #FF5252; --p2: #2196F3; --p3: #4CAF50; --p4: #FFC107;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: var(--bg);
+            margin: 0; height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column;
+            user-select: none; touch-action: manipulation;
+        }
+
+        #setup-screen {
+            position: fixed; inset: 0; background: #F3E5F5; z-index: 1000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        .mode-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        .player-select-btn {
+            width: 180px; height: 120px; font-size: 3rem; cursor: pointer;
+            border-radius: 25px; border: 6px solid #7B1FA2; background: white;
+            font-weight: bold; box-shadow: 0 8px 0 #4A148C;
+        }
+
+        #game-area { display: flex; flex: 1; width: 100%; height: 100%; background: white; }
+
+        .player-lane {
+            flex: 1; display: flex; flex-direction: column;
+            border-right: 3px solid #333; position: relative;
+            background: white; padding: 5px;
+        }
+
+        .header { background: #333; color: white; padding: 8px; font-size: 1.2rem; text-align: center; }
+        .question { font-size: 3rem; margin: 25px 0; text-align: center; font-weight: bold; color: #333; min-height: 90px; }
+        .options-grid { display: flex; flex-direction: column; gap: 12px; padding: 0 5px; }
+        
+        .btn {
+            width: 100%; padding: 18px 0; font-size: 2.2rem; border-radius: 15px;
+            border: 3px solid #ccc; background: white; cursor: pointer;
+            font-weight: bold; box-shadow: 0 5px 0 #bbb;
+        }
+        .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #bbb; }
+
+        .lane-1 { background-color: #fff9f9; } .lane-2 { background-color: #f0faff; }
+        .lane-3 { background-color: #f6fff6; } .lane-4 { background-color: #fffff2; }
+
+        .correct { background: #4CAF50 !important; color: white; border-color: #1b5e20; }
+        .wrong { background: #F44336 !important; color: white; border-color: #b71c1c; animation: shake 0.3s; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .winner-overlay {
+            position: absolute; inset: 0; background: rgba(255,255,255,0.95);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 500; border: 10px solid gold; text-align: center;
+        }
+
+        #restart-area { position: fixed; top: 10px; right: 10px; z-index: 2000; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen">
+        <h1 style="font-size: 3.5rem; color: #6A1B9A; margin-bottom: 20px;">➗ BÖLME YARIŞI</h1>
+        <div class="mode-container">
+            <button class="player-select-btn" onclick="initGame(1)">1</button>
+            <button class="player-select-btn" onclick="initGame(2)">2</button>
+            <button class="player-select-btn" onclick="initGame(3)">3</button>
+            <button class="player-select-btn" onclick="initGame(4)">4</button>
+        </div>
+    </div>
+
+    <div id="game-area" class="hidden"></div>
+
+    <div id="restart-area" class="hidden">
+        <button class="btn" style="background: #9C27B0; color: white; padding: 10px 20px; font-size: 1.2rem;" onclick="location.reload()">🔄 SIFIRLA</button>
+    </div>
+
+<script>
+    const divisionBank = [
+        { q: "6 ÷ 2", a: 3, opts: [2,3,4,5] }, { q: "8 ÷ 2", a: 4, opts: [3,4,5,6] },
+        { q: "10 ÷ 2", a: 5, opts: [4,5,6,7] }, { q: "12 ÷ 3", a: 4, opts: [3,4,5,6] },
+        { q: "14 ÷ 2", a: 7, opts: [6,7,8,9] }, { q: "15 ÷ 3", a: 5, opts: [4,5,6,7] },
+        { q: "16 ÷ 4", a: 4, opts: [3,4,5,6] }, { q: "18 ÷ 3", a: 6, opts: [5,6,7,8] },
+        { q: "20 ÷ 4", a: 5, opts: [4,5,6,7] }, { q: "24 ÷ 6", a: 4, opts: [3,4,5,6] },
+        { q: "28 ÷ 4", a: 7, opts: [6,7,8,9] }, { q: "30 ÷ 5", a: 6, opts: [5,6,7,8] },
+        { q: "32 ÷ 4", a: 8, opts: [7,8,9,10] }, { q: "36 ÷ 6", a: 6, opts: [5,6,7,8] },
+        { q: "40 ÷ 5", a: 8, opts: [7,8,9,10] }, { q: "42 ÷ 6", a: 7, opts: [6,7,8,9] },
+        { q: "48 ÷ 6", a: 8, opts: [7,8,9,10] }, { q: "54 ÷ 9", a: 6, opts: [5,6,7,8] },
+        { q: "56 ÷ 8", a: 7, opts: [6,7,8,9] }, { q: "72 ÷ 9", a: 8, opts: [7,8,9,10] }
+    ];
+
+    let players = [];
+    let audioCtx;
+
+    function initGame(count) {
+        // Ses sistemini başlatmayı dene ama hata verirse oyunu durdurma
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch(e) {
+            console.log("Ses sistemi başlatılamadı.");
+        }
+
+        document.getElementById('setup-screen').classList.add('hidden');
+        const area = document.getElementById('game-area');
+        area.classList.remove('hidden');
+        area.innerHTML = '';
+        players = [];
+        
+        for(let i=1; i<=count; i++) {
+            let shuffledQuestions = JSON.parse(JSON.stringify(divisionBank))
+                                        .sort(() => Math.random() - 0.5);
+            players.push({ id: i, qList: shuffledQuestions });
+
+            const lane = document.createElement('div');
+            lane.className = `player-lane lane-${i}`;
+            lane.id = `lane-${i}`;
+            lane.innerHTML = `
+                <div class="header">OYUNCU ${i}</div>
+                <div class="question" id="p${i}-q">...</div>
+                <div class="options-grid" id="p${i}-opts"></div>
+            `;
+            area.appendChild(lane);
+            renderQuestion(i);
+        }
+    }
+
+    function renderQuestion(pId) {
+        const p = players[pId-1];
+        if(!p || p.qList.length === 0) return win(pId);
+
+        const data = p.qList[0];
+        document.getElementById(`p${pId}-q`).innerText = data.q + " = ?";
+        const optsDiv = document.getElementById(`p${pId}-opts`);
+        optsDiv.innerHTML = '';
+        
+        const shuffledOpts = [...data.opts].sort(() => Math.random() - 0.5);
+        shuffledOpts.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.innerText = opt;
+            btn.onclick = () => check(pId, opt, data.a, btn);
+            optsDiv.appendChild(btn);
+        });
+    }
+
+    function check(pId, val, correct, btn) {
+        const p = players[pId-1];
+        if(val === correct) {
+            btn.classList.add('correct');
+            beep(600, 0.1);
+            setTimeout(() => {
+                p.qList.shift();
+                renderQuestion(pId);
+            }, 400);
+        } else {
+            btn.classList.add('wrong');
+            beep(150, 0.2);
+            setTimeout(() => {
+                btn.classList.remove('wrong');
+                const wrongQ = p.qList.shift();
+                p.qList.push(wrongQ); 
+                renderQuestion(pId);
+            }, 600);
+        }
+    }
+
+    function win(pId) {
+        const lane = document.getElementById(`lane-${pId}`);
+        if(!lane.querySelector('.winner-overlay')) {
+            const overlay = document.createElement('div');
+            overlay.className = 'winner-overlay';
+            overlay.innerHTML = `<h1 style="font-size:3.5rem">🏆</h1><h3>HARİKA!</h3><p>Oyuncu ${pId}<br>Kazandı!</p>`;
+            lane.appendChild(overlay);
+            document.getElementById('restart-area').classList.remove('hidden');
+        }
+    }
+
+    function beep(f, d) {
+        if(!audioCtx) return;
+        try {
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.frequency.value = f;
+            g.gain.value = 0.05;
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start(); o.stop(audioCtx.currentTime + d);
+        } catch(e) {}
+    }
+</script>
+</body>
+</html>

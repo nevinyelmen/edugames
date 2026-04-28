@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matematik Yarışı - Kopya Korumalı</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --p1: #FF5252; --p2: #2196F3; --p3: #4CAF50; --p4: #FFC107;
+        }
+
+        body {
+            font-family: 'Comic Sans MS', cursive, sans-serif;
+            background-color: var(--bg);
+            margin: 0; height: 100vh; overflow: hidden;
+            display: flex; flex-direction: column;
+            user-select: none; touch-action: manipulation;
+        }
+
+        /* Giriş Ekranı */
+        #setup-screen {
+            position: fixed; inset: 0; background: #FFF9C4; z-index: 1000;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+
+        .mode-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+        .player-select-btn {
+            width: 180px; height: 120px; font-size: 2.5rem; cursor: pointer;
+            border-radius: 25px; border: 6px solid #FF9800; background: white;
+            font-weight: bold; box-shadow: 0 8px 0 #E65100;
+        }
+
+        /* Oyun Alanı */
+        #game-area { display: flex; flex: 1; width: 100%; height: 100%; }
+
+        .player-lane {
+            flex: 1; display: flex; flex-direction: column;
+            border-right: 3px solid #333; position: relative;
+            background: white; padding: 5px;
+        }
+
+        .header { background: #333; color: white; padding: 8px; font-size: 1.2rem; text-align: center; }
+        
+        /* Soru ve Buton Alanı - Sığması İçin Daraltıldı */
+        .question { 
+            font-size: 2.8rem; /* Boyut biraz küçültüldü */
+            margin: 20px 0; 
+            text-align: center; 
+            font-weight: bold; 
+            color: #333;
+            min-height: 80px;
+        }
+
+        .options-grid { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 10px; /* Boşluklar azaltıldı */
+            padding: 0 5px; 
+        }
+        
+        .btn {
+            width: 100%; 
+            padding: 15px 0; /* Buton yüksekliği azaltıldı */
+            font-size: 2rem; 
+            border-radius: 15px;
+            border: 3px solid #ccc; 
+            background: white; 
+            cursor: pointer;
+            font-weight: bold; 
+            box-shadow: 0 5px 0 #bbb;
+        }
+
+        .btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #bbb; }
+
+        .lane-1 { background-color: #fff5f5; } .lane-2 { background-color: #f0f7ff; }
+        .lane-3 { background-color: #f2fff2; } .lane-4 { background-color: #fffff0; }
+
+        .correct { background: #4CAF50 !important; color: white; border-color: #1b5e20; }
+        .wrong { background: #F44336 !important; color: white; border-color: #b71c1c; animation: shake 0.3s; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .winner-overlay {
+            position: absolute; inset: 0; background: rgba(255,255,255,0.95);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 500; border: 8px solid gold; text-align: center;
+        }
+
+        #restart-area { position: fixed; top: 10px; right: 10px; z-index: 2000; }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="setup-screen">
+        <h1 style="font-size: 3rem; color: #D32F2F; margin-bottom: 20px;">🏎️ MATEMATİK YARIŞI</h1>
+        <div class="mode-container">
+            <button class="player-select-btn" onclick="initGame(1)">1</button>
+            <button class="player-select-btn" onclick="initGame(2)">2</button>
+            <button class="player-select-btn" onclick="initGame(3)">3</button>
+            <button class="player-select-btn" onclick="initGame(4)">4</button>
+        </div>
+        <p style="margin-top: 20px; font-weight: bold; color: #555;">Herkesin Sorusu Farklı!</p>
+    </div>
+
+    <div id="game-area"></div>
+
+    <div id="restart-area" class="hidden">
+        <button class="btn" style="background: #FF5722; color: white; padding: 10px 20px; font-size: 1.2rem; box-shadow: 0 4px 0 #BF360C;" onclick="location.reload()">🔄 SIFIRLA</button>
+    </div>
+
+<script>
+    const questionBank = [
+        { q: "9+6", a: 15, opts: [14,15,16,17] },
+        { q: "13+5", a: 18, opts: [17,18,19,20] },
+        { q: "11+9", a: 20, opts: [19,20,21,22] },
+        { q: "18+7", a: 25, opts: [24,25,26,27] },
+        { q: "16+8", a: 24, opts: [23,24,25,26] },
+        { q: "29+6", a: 35, opts: [34,35,36,37] },
+        { q: "32+9", a: 41, opts: [40,41,42,43] },
+        { q: "48+7", a: 55, opts: [54,55,56,57] },
+        { q: "68+9", a: 77, opts: [76,77,78,79] },
+        { q: "22+13", a: 35, opts: [34,35,36,37] },
+        { q: "15+9", a: 24, opts: [23,24,25,26] }
+    ];
+
+    let players = [];
+    let audioCtx;
+
+    function initGame(count) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        document.getElementById('setup-screen').classList.add('hidden');
+        const area = document.getElementById('game-area');
+        area.innerHTML = '';
+        
+        for(let i=1; i<=count; i++) {
+            // HER OYUNCU İÇİN SORULARI KARIŞTIR (KOPYA ENGELİ)
+            let shuffledQuestions = JSON.parse(JSON.stringify(questionBank))
+                                        .sort(() => Math.random() - 0.5);
+
+            players.push({
+                id: i,
+                qList: shuffledQuestions
+            });
+
+            const lane = document.createElement('div');
+            lane.className = `player-lane lane-${i}`;
+            lane.id = `lane-${i}`;
+            lane.innerHTML = `
+                <div class="header">OYUNCU ${i}</div>
+                <div class="question" id="p${i}-q">...</div>
+                <div class="options-grid" id="p${i}-opts"></div>
+            `;
+            area.appendChild(lane);
+            renderQuestion(i);
+        }
+    }
+
+    function renderQuestion(pId) {
+        const p = players[pId-1];
+        if(p.qList.length === 0) return win(pId);
+
+        const data = p.qList[0];
+        document.getElementById(`p${pId}-q`).innerText = data.q + " = ?";
+        
+        const optsDiv = document.getElementById(`p${pId}-opts`);
+        optsDiv.innerHTML = '';
+        
+        // ŞIKLARI DA KENDİ İÇİNDE KARIŞTIR
+        const shuffledOpts = [...data.opts].sort(() => Math.random() - 0.5);
+        shuffledOpts.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'btn';
+            btn.innerText = opt;
+            btn.onclick = () => check(pId, opt, data.a, btn);
+            optsDiv.appendChild(btn);
+        });
+    }
+
+    function check(pId, val, correct, btn) {
+        const p = players[pId-1];
+        const allLaneBtns = document.getElementById(`p${pId}-opts`).querySelectorAll('.btn');
+        
+        if(val === correct) {
+            allLaneBtns.forEach(b => b.style.pointerEvents = 'none');
+            btn.classList.add('correct');
+            beep(600, 0.1);
+            setTimeout(() => {
+                p.qList.shift();
+                renderQuestion(pId);
+            }, 400);
+        } else {
+            btn.classList.add('wrong');
+            beep(150, 0.2);
+            setTimeout(() => {
+                btn.classList.remove('wrong');
+                const wrongQ = p.qList.shift();
+                p.qList.push(wrongQ); // Yanlışı sona at
+                renderQuestion(pId);
+            }, 600);
+        }
+    }
+
+    function win(pId) {
+        const lane = document.getElementById(`lane-${pId}`);
+        const overlay = document.createElement('div');
+        overlay.className = 'winner-overlay';
+        overlay.innerHTML = `<h1 style="font-size:3rem">🏆</h1><h3>TEBRİKLER!</h3><p>Oyuncu ${pId}<br>Yarışı Kazandı!</p>`;
+        lane.appendChild(overlay);
+        document.getElementById('restart-area').classList.remove('hidden');
+    }
+
+    function beep(f, d) {
+        if(!audioCtx) return;
+        const o = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        o.frequency.value = f;
+        g.gain.value = 0.05;
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(); o.stop(audioCtx.currentTime + d);
+    }
+</script>
+</body>
+</html>
