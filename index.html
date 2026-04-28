@@ -9,75 +9,81 @@
             font-family: 'Comic Sans MS', cursive, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             margin: 0;
+            padding: 0;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            overflow: hidden;
+            overflow: hidden; /* Kaydırma çubuğunu engeller */
             color: white;
         }
 
         .portal-container {
             text-align: center;
             background: rgba(255, 255, 255, 0.1);
-            padding: 40px;
-            border-radius: 50px;
+            padding: 20px; /* Boşluğu daralttık */
+            border-radius: 30px;
             backdrop-filter: blur(10px);
-            border: 4px solid rgba(255, 255, 255, 0.2);
-            width: 90%;
-            max-width: 1000px;
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            width: 95%;
+            max-width: 900px;
+            max-height: 95vh; /* Ekran yüksekliğinin %95'ini geçmez */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
         }
 
         h1 {
-            font-size: 4rem;
-            margin-bottom: 30px;
-            text-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+            font-size: 2.5rem; /* Başlık küçültüldü */
+            margin: 10px 0 20px 0;
+            text-shadow: 3px 3px 0px rgba(0,0,0,0.2);
         }
 
         .game-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 25px;
+            gap: 15px; /* Boşluklar azaltıldı */
         }
 
         .game-card {
             background: white;
-            padding: 30px;
-            border-radius: 30px;
+            padding: 15px; /* İç boşluk azaltıldı */
+            border-radius: 20px;
             text-decoration: none;
             color: #333;
-            font-size: 2rem;
+            font-size: 1.4rem; /* Yazı boyutu dengelendi */
             font-weight: bold;
             transition: all 0.3s;
             display: flex;
             flex-direction: column;
             align-items: center;
-            box-shadow: 0 15px 0 #ddd;
-            border: 6px solid transparent;
+            justify-content: center;
+            box-shadow: 0 8px 0 #ddd;
+            border: 4px solid transparent;
+            min-height: 120px; /* Kart yüksekliği sabitlendi */
         }
 
-        /* Her Oyun İçin Ayrı Renk */
+        /* Renkler aynı kaldı */
         .toplama { border-color: #FF5252; color: #D32F2F; }
         .cikarma { border-color: #2196F3; color: #1976D2; }
         .carpma { border-color: #4CAF50; color: #388E3C; }
         .bolme { border-color: #9C27B0; color: #7B1FA2; }
 
         .game-card:active {
-            transform: translateY(10px);
-            box-shadow: 0 5px 0 #bbb;
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #bbb;
         }
 
         .game-card span {
-            font-size: 4rem;
-            margin-bottom: 10px;
+            font-size: 2.5rem; /* İkonlar küçültüldü */
+            margin-bottom: 5px;
         }
 
-        .game-card:hover {
-            transform: scale(1.05);
-            background: #f9f9f9;
+        p { 
+            font-size: 1.1rem; 
+            margin-top: 15px; 
+            opacity: 0.9; 
         }
-
-        p { font-size: 1.5rem; margin-top: 20px; opacity: 0.8; }
     </style>
 </head>
 <body>
@@ -85,23 +91,12 @@
 <div class="portal-container">
     <h1>🚀 EĞİTİCİ OYUNLAR</h1>
     <div class="game-grid">
-        <a href="toplama.html" class="game-card toplama">
-            <span>➕</span> TOPLAMA YARIŞI
-        </a>
-        
-        <a href="cikarma.html" class="game-card cikarma">
-            <span>➖</span> ÇIKARMA YARIŞI
-        </a>
-
-        <a href="carpma.html" class="game-card carpma">
-            <span>✖️</span> ÇARPMA YARIŞI
-        </a>
-
-        <a href="bolme.html" class="game-card bolme">
-            <span>➗</span> BÖLME YARIŞI
-        </a>
+        <a href="toplama.html" class="game-card toplama"><span>➕</span> TOPLAMA</a>
+        <a href="cikarma.html" class="game-card cikarma"><span>➖</span> ÇIKARMA</a>
+        <a href="carpma.html" class="game-card carpma"><span>✖️</span> ÇARPMA</a>
+        <a href="bolme.html" class="game-card bolme"><span>➗</span> BÖLME</a>
     </div>
-    <p>Oynamak istediğin dersi seç ve yarışa başla!</p>
+    <p>Bir yarış seç ve hemen başla!</p>
 </div>
 
 </body>
