@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wortarten Pro - Final Master</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body, html {
+            margin: 0; padding: 0; height: 100%; width: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a1a; overflow: hidden; color: white;
+        }
+
+        /* Giriş Ekranı */
+        #setup-screen {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; background: radial-gradient(circle, #2c3e50, #000);
+        }
+
+        .config-panel {
+            background: rgba(255, 255, 255, 0.1); padding: 40px; border-radius: 30px;
+            text-align: center; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px);
+        }
+
+        select, button { padding: 12px 25px; font-size: 1.1rem; margin: 10px; border-radius: 12px; border: none; }
+        button { background: #27ae60; color: white; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button:hover { background: #2ecc71; transform: scale(1.05); }
+
+        /* Oyun Alanı */
+        #game-container { display: none; width: 100vw; height: 100vh; }
+
+        .player-column {
+            display: flex; flex-direction: column; align-items: center; 
+            justify-content: space-between; padding: 25px 10px;
+            border-right: 2px solid rgba(255,255,255,0.05);
+            height: 100%; width: 100%; position: relative;
+        }
+
+        /* OYUNCU İSİMLERİ - Yeni Tasarım */
+        .player-label { 
+            font-family: 'Courier New', Courier, monospace; /* Farklı yazı tipi */
+            font-size: 1.1rem; 
+            font-weight: bold; 
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            padding: 5px 15px;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.3);
+        }
+
+        /* ANA KELİME - Odak Noktası */
+        .word-display { 
+            font-size: clamp(2rem, 6vw, 4rem); 
+            font-weight: 900; 
+            font-family: 'Arial Rounded MT Bold', sans-serif;
+            text-align: center; 
+            color: #ffffff;
+            text-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .btn-stack { display: flex; flex-direction: column; gap: 15px; width: 95%; }
+        
+        .type-btn { 
+            padding: 22px 5px; font-size: 1.4rem; font-weight: bold; 
+            border-radius: 20px; border: none; cursor: pointer; color: white;
+            box-shadow: 0 6px rgba(0,0,0,0.4);
+        }
+
+        .nomen { background: #2980b9; }
+        .verb { background: #d35400; }
+        .adjektiv { background: #8e44ad; }
+
+        /* KAZANMA EKRANI */
+        .winner-badge { 
+            font-size: clamp(7rem, 18vw, 13rem); 
+            filter: drop-shadow(0 0 30px #f1c40f);
+            animation: megaPop 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.5);
+            margin: auto;
+        }
+
+        .winner-glow { background: linear-gradient(to bottom, #f39c12, #f1c40f) !important; color: #000 !important; }
+
+        @keyframes megaPop {
+            0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .flash-correct { background: rgba(39, 174, 96, 0.6) !important; }
+        .flash-wrong { background: rgba(192, 57, 43, 0.6) !important; animation: shake 0.3s; }
+        @keyframes shake { 0%, 100% {transform: translateX(0)} 25% {transform: translateX(-10px)} 75% {transform: translateX(10px)} }
+    </style>
+</head>
+<body>
+
+<div id="setup-screen">
+    <div class="config-panel">
+        <h1 style="color:#f1c40f; margin-bottom:30px;">WORTARTEN CHALLENGE</h1>
+        
+        <p>SPIELERANZAHL (Oyuncu Sayısı)</p>
+        <select id="playerCount">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4" selected>4</option>
+        </select>
+
+        <p>FRAGENANZAHL (Soru Sayısı)</p>
+        <select id="questionLimit">
+            <option value="10">10</option>
+            <option value="15" selected>15</option>
+            <option value="20">20</option>
+            <option value="30">30</option>
+        </select>
+        
+        <br><br>
+        <button onclick="initGame()">SPIEL STARTEN</button>
+    </div>
+</div>
+
+<div id="game-container"></div>
+
+<script>
+    // Ses Efekti (Alkış + Fanfar)
+    function playPowerWinSound() {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const notes = [440, 554, 659, 880]; 
+        notes.forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.12);
+            gain.gain.setValueAtTime(0, audioCtx.currentTime + i * 0.12);
+            gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + i * 0.12 + 0.05);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + i * 0.12 + 0.4);
+            osc.start(audioCtx.currentTime + i * 0.12);
+            osc.stop(audioCtx.currentTime + i * 0.12 + 0.5);
+        });
+        // Alkış (Noise)
+        const bufferSize = audioCtx.sampleRate * 1.2;
+        const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) { data[i] = Math.random() * 2 - 1; }
+        const noise = audioCtx.createBufferSource();
+        noise.buffer = buffer;
+        const noiseGain = audioCtx.createGain();
+        noiseGain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+        noise.connect(noiseGain); noiseGain.connect(audioCtx.destination);
+        noise.start();
+    }
+
+    const dictionary = [
+        {w: "HAUS", t: "Nomen"}, {w: "LAUFEN", t: "Verb"}, {w: "SCHÖN", t: "Adjektiv"},
+        {w: "BAUM", t: "Nomen"}, {w: "ESSEN", t: "Verb"}, {w: "KLEIN", t: "Adjektiv"},
+        {w: "AUTO", t: "Nomen"}, {w: "SPRINGEN", t: "Verb"}, {w: "ALT", t: "Adjektiv"},
+        {w: "BUCH", t: "Nomen"}, {w: "SCHREIBEN", t: "Verb"}, {w: "SCHNELL", t: "Adjektiv"},
+        {w: "HUND", t: "Nomen"}, {w: "SPIELEN", t: "Verb"}, {w: "LANGSAM", t: "Adjektiv"},
+        {w: "TISCH", t: "Nomen"}, {w: "LESEN", t: "Verb"}, {w: "GROSS", t: "Adjektiv"},
+        {w: "KATZE", t: "Nomen"}, {w: "SINGEN", t: "Verb"}, {w: "LEISE", t: "Adjektiv"},
+        {w: "BALL", t: "Nomen"}, {w: "WERFEN", t: "Verb"}, {w: "KALT", t: "Adjektiv"},
+        {w: "APFEL", t: "Nomen"}, {w: "MALE", t: "Verb"}, {w: "GELB", t: "Adjektiv"}
+    ];
+
+    const names = ["BLITZ", "FALKE", "GEPARD", "DELFIN"];
+    const colors = ["#f1c40f", "#e74c3c", "#3498db", "#2ecc71"]; // Oyuncu renkleri
+    let players = [];
+    let winners = [];
+
+    function initGame() {
+        const count = parseInt(document.getElementById('playerCount').value);
+        const limit = parseInt(document.getElementById('questionLimit').value);
+        document.getElementById('setup-screen').style.display = 'none';
+        const container = document.getElementById('game-container');
+        container.style.display = 'grid';
+        container.style.gridTemplateColumns = `repeat(${count}, 1fr)`;
+
+        for (let i = 0; i < count; i++) {
+            players[i] = { 
+                id: i, 
+                name: names[i], 
+                color: colors[i],
+                cur: 0, 
+                wrongs: [], 
+                list: [...dictionary].sort(() => Math.random() - 0.5).slice(0, limit) 
+            };
+            updatePlayer(i);
+        }
+    }
+
+    function updatePlayer(id) {
+        const p = players[id];
+        const container = document.getElementById('game-container');
+        let col = document.getElementById(`col-${id}`);
+        if (!col) { col = document.createElement('div'); col.id = `col-${id}`; container.appendChild(col); }
+        col.className = `player-column col-${id}`;
+
+        if (p.cur >= p.list.length) {
+            if (p.wrongs.length > 0) {
+                p.list = [...p.wrongs]; p.wrongs = []; p.cur = 0;
+            } else {
+                if (!winners.includes(id)) {
+                    winners.push(id);
+                    const rank = winners.indexOf(id) + 1;
+                    if(rank === 1) playPowerWinSound();
+                    col.innerHTML = `
+                        <div class="winner-badge">${rank === 1 ? '🏆' : rank + '.'}</div>
+                        <div class="player-label" style="color:#000; background:white;">${p.name}</div>
+                    `;
+                    if(rank === 1) col.classList.add('winner-glow');
+                }
+                return;
+            }
+        }
+
+        const q = p.list[p.cur];
+        col.innerHTML = `
+            <div class="player-label" style="color:${p.color}">${p.name}</div>
+            <div class="word-display">${q.w}</div>
+            <div class="btn-stack">
+                <button class="type-btn nomen" onclick="check(${id}, 'Nomen')">Nomen</button>
+                <button class="type-btn verb" onclick="check(${id}, 'Verb')">Verb</button>
+                <button class="type-btn adjektiv" onclick="check(${id}, 'Adjektiv')">Adjektiv</button>
+            </div>
+            <div style="font-size:0.8rem; opacity:0.4">${p.cur + 1}/${p.list.length}</div>
+        `;
+    }
+
+    function check(id, val) {
+        const p = players[id];
+        const col = document.getElementById(`col-${id}`);
+        if (val === p.list[p.cur].t) {
+            col.classList.add('flash-correct');
+            setTimeout(() => { col.classList.remove('flash-correct'); p.cur++; updatePlayer(id); }, 150);
+        } else {
+            col.classList.add('flash-wrong');
+            p.wrongs.push(p.list[p.cur]);
+            setTimeout(() => { col.classList.remove('flash-wrong'); p.cur++; updatePlayer(id); }, 300);
+        }
+    }
+</script>
+</body>
+</html>
