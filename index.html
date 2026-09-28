@@ -29,7 +29,7 @@
       overflow-x: hidden;
     }
 
-    /* ── ARKA PLAN YILDIZLAR ── */
+    /* â”€â”€ ARKA PLAN YILDIZLAR â”€â”€ */
     body::before {
       content: '';
       position: fixed; inset: 0; z-index: 0;
@@ -42,7 +42,7 @@
 
     .page { position: relative; z-index: 1; }
 
-    /* ── HEADER ── */
+    /* â”€â”€ HEADER â”€â”€ */
     header {
       text-align: center;
       padding: clamp(2.5rem, 7vh, 5rem) 1.5rem clamp(1.5rem, 4vh, 3rem);
@@ -72,7 +72,7 @@
       opacity: 0.72; letter-spacing: 1px;
     }
 
-    /* ── OYUN KARTLARI ── */
+    /* â”€â”€ OYUN KARTLARI â”€â”€ */
     .games {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
@@ -103,17 +103,20 @@
       pointer-events: none;
     }
 
-    .game-card.pink  { border-color: rgba(255,107,157,.35); }
-    .game-card.mint  { border-color: rgba(0,201,167,.35); }
+    .game-card.pink   { border-color: rgba(255,107,157,.35); }
+    .game-card.mint   { border-color: rgba(0,201,167,.35); }
+    .game-card.purple { border-color: rgba(187,134,252,.35); }
 
-    .game-card.pink::before  { background: radial-gradient(ellipse at 30% 20%, rgba(255,107,157,.18) 0%, transparent 70%); }
-    .game-card.mint::before  { background: radial-gradient(ellipse at 30% 20%, rgba(0,201,167,.18) 0%, transparent 70%); }
+    .game-card.pink::before   { background: radial-gradient(ellipse at 30% 20%, rgba(255,107,157,.18) 0%, transparent 70%); }
+    .game-card.mint::before   { background: radial-gradient(ellipse at 30% 20%, rgba(0,201,167,.18) 0%, transparent 70%); }
+    .game-card.purple::before { background: radial-gradient(ellipse at 30% 20%, rgba(187,134,252,.18) 0%, transparent 70%); }
 
     .game-card:hover {
       transform: translateY(-6px) scale(1.015);
     }
-    .game-card.pink:hover  { box-shadow: 0 16px 48px rgba(255,107,157,.28); border-color: rgba(255,107,157,.7); }
-    .game-card.mint:hover  { box-shadow: 0 16px 48px rgba(0,201,167,.28);   border-color: rgba(0,201,167,.7);   }
+    .game-card.pink:hover   { box-shadow: 0 16px 48px rgba(255,107,157,.28); border-color: rgba(255,107,157,.7); }
+    .game-card.mint:hover   { box-shadow: 0 16px 48px rgba(0,201,167,.28);   border-color: rgba(0,201,167,.7);   }
+    .game-card.purple:hover { box-shadow: 0 16px 48px rgba(187,134,252,.28); border-color: rgba(187,134,252,.7); }
     .game-card:hover::before { opacity: 1; }
 
     .card-icon {
@@ -126,8 +129,9 @@
       font-size: clamp(1.9rem, 3.5vw, 3rem); font-weight: 600;
       margin-bottom: 0.5rem; line-height: 1.1;
     }
-    .game-card.pink .card-title { color: #ffb8d4; }
-    .game-card.mint .card-title { color: #80f0e0; }
+    .game-card.pink .card-title   { color: #ffb8d4; }
+    .game-card.mint .card-title   { color: #80f0e0; }
+    .game-card.purple .card-title { color: #e0c8ff; }
 
     .card-desc {
       font-size: clamp(1rem, 1.8vw, 1.35rem); font-weight: 400;
@@ -144,8 +148,9 @@
       padding: 0.28em 0.85em; border-radius: 50px;
       border: 1.5px solid;
     }
-    .game-card.pink .tag { border-color: rgba(255,107,157,.5); color: #ffb8d4; background: rgba(255,107,157,.12); }
-    .game-card.mint .tag { border-color: rgba(0,201,167,.5);   color: #80f0e0; background: rgba(0,201,167,.12);   }
+    .game-card.pink .tag   { border-color: rgba(255,107,157,.5); color: #ffb8d4; background: rgba(255,107,157,.12); }
+    .game-card.mint .tag   { border-color: rgba(0,201,167,.5);   color: #80f0e0; background: rgba(0,201,167,.12);   }
+    .game-card.purple .tag { border-color: rgba(187,134,252,.5); color: #e0c8ff; background: rgba(187,134,252,.12); }
 
     .card-btn {
       display: flex; align-items: center; justify-content: center;
@@ -156,12 +161,13 @@
       transition: filter 0.12s, transform 0.08s;
       align-self: flex-start;
     }
-    .game-card.pink .card-btn { background: var(--pink); color: #fff; box-shadow: 0 6px 0 #c04070; }
-    .game-card.mint .card-btn { background: var(--mint); color: #fff; box-shadow: 0 6px 0 #008a72; }
+    .game-card.pink .card-btn   { background: var(--pink);   color: #fff; box-shadow: 0 6px 0 #c04070; }
+    .game-card.mint .card-btn   { background: var(--mint);   color: #fff; box-shadow: 0 6px 0 #008a72; }
+    .game-card.purple .card-btn { background: var(--purple); color: #fff; box-shadow: 0 6px 0 #7040b0; }
     .game-card:hover .card-btn { filter: brightness(1.1); }
     .game-card:active .card-btn { transform: translateY(4px); box-shadow: none !important; }
 
-    /* ── FOOTER ── */
+    /* â”€â”€ FOOTER â”€â”€ */
     footer {
       text-align: center;
       padding: 0 1.5rem clamp(2rem, 5vh, 3.5rem);
@@ -181,30 +187,30 @@
 
   <header>
     <h1>Mathe-Spiele</h1>
-    <p class="subtitle">Interaktive Lernspiele für die Grundschule</p>
+    <p class="subtitle">Interaktive Lernspiele fÃ¼r die Grundschule</p>
   </header>
 
   <main class="games">
 
     <!-- Mathe-Helden -->
     <a class="game-card pink" href="mathe-helden.html">
-      <div class="card-icon">🦁🐯🐸🦊</div>
+      <div class="card-icon">ðŸ¦ðŸ¯ðŸ¸ðŸ¦Š</div>
       <div class="card-title">Mathe-Helden</div>
       <p class="card-desc">
-        Wähle dein Tier und beantworte Aufgaben — bei einem Fehler platzt
+        WÃ¤hle dein Tier und beantworte Aufgaben â€” bei einem Fehler platzt
         dein eigener Ballon! Bis zu 4 Spieler treten gleichzeitig an.
       </p>
       <div class="card-tags">
-        <span class="tag">1–4 Spieler</span>
+        <span class="tag">1â€“4 Spieler</span>
         <span class="tag">Alle Rechenarten</span>
         <span class="tag">Bis 100</span>
       </div>
-      <span class="card-btn">🎈 Spielen →</span>
+      <span class="card-btn">ðŸŽˆ Spielen â†’</span>
     </a>
 
     <!-- Quadrat-Duell -->
     <a class="game-card mint" href="quadrat-duell.html">
-      <div class="card-icon">🦖 <span style="opacity:.35;font-size:0.7em">VS</span> 🦕</div>
+      <div class="card-icon">ðŸ¦– <span style="opacity:.35;font-size:0.7em">VS</span> ðŸ¦•</div>
       <div class="card-title">Quadrat-Duell</div>
       <p class="card-desc">
         Beantworte Aufgaben und erobere das Spielfeld!
@@ -215,12 +221,28 @@
         <span class="tag">Alle Rechenarten</span>
         <span class="tag">3 Schwierigkeiten</span>
       </div>
-      <span class="card-btn">🎮 Spielen →</span>
+      <span class="card-btn">ðŸŽ® Spielen â†’</span>
+    </a>
+
+    <!-- Stern-Jagd -->
+    <a class="game-card purple" href="stern-jagd.html">
+      <div class="card-icon">â­ðŸ¦ðŸ¯ðŸ¸ðŸ¦Š</div>
+      <div class="card-title">Stern-Jagd</div>
+      <p class="card-desc">
+        Klicke auf das richtige Antwortfeld und sammle Sterne!
+        Wer zuerst alle 12 Felder leuchten lÃ¤sst, gewinnt.
+      </p>
+      <div class="card-tags">
+        <span class="tag">2â€“4 Spieler</span>
+        <span class="tag">Alle Rechenarten</span>
+        <span class="tag">3 Schwierigkeiten</span>
+      </div>
+      <span class="card-btn">â­ Spielen â†’</span>
     </a>
 
   </main>
 
-  <footer>Grundschule · NRW · Interaktive Mathe-Übungen</footer>
+  <footer>Grundschule Â· NRW Â· Interaktive Mathe-Ãœbungen</footer>
 
 </div>
 </body>
