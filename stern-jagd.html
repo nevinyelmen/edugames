@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stern-Jagd</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #1e1245; --yellow: #FFD93D;
+      --divider: rgba(255,255,255,0.45);
+      --font: 'Fredoka', sans-serif;
+    }
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    html, body {
+      width:100vw; height:100vh; overflow:hidden;
+      font-family:var(--font); background:var(--bg); color:#fff;
+    }
+    .screen { width:100vw; height:100vh; display:none; position:relative; }
+    .screen.active { display:flex; }
+
+    /* ── MENÜ ── */
+    .menu-screen {
+      flex-direction:column; justify-content:center; align-items:center;
+      gap:clamp(1rem,2.5vh,2.5rem); text-align:center; padding:2rem;
+      background:radial-gradient(ellipse at 50% 30%, #3a1a7a 0%, #1e1245 70%);
+    }
+    .game-title {
+      font-size:clamp(4rem,9vw,8rem); font-weight:600; color:var(--yellow);
+      text-shadow:0 4px 24px rgba(255,217,61,.35), 4px 4px 0 rgba(0,0,0,.3);
+      letter-spacing:4px;
+    }
+    .game-subtitle { font-size:clamp(1.1rem,2.2vw,1.9rem); opacity:.75; }
+    .title-icon { font-size:clamp(3rem,7vw,6rem); line-height:1; }
+    .menu-label  { font-size:clamp(1.4rem,2.6vw,2.2rem); font-weight:500; }
+    .btn-grid    { display:flex; gap:clamp(.8rem,2vw,2rem); justify-content:center; flex-wrap:wrap; }
+
+    .btn-menu {
+      font-family:inherit; font-size:clamp(1.3rem,2.3vw,2rem); font-weight:500;
+      padding:clamp(.85rem,1.8vh,1.5rem) clamp(1.1rem,2vw,1.9rem);
+      border:2.5px solid rgba(255,255,255,.22); border-radius:20px;
+      background:rgba(255,255,255,.07); color:#fff; cursor:pointer;
+      box-shadow:0 6px 0 rgba(0,0,0,.22);
+      transition:transform .08s, box-shadow .08s;
+      display:flex; flex-direction:column; align-items:center; gap:.35rem; min-width:130px;
+    }
+    .btn-menu:active { transform:translateY(5px); box-shadow:0 1px 0 rgba(0,0,0,.22); }
+    .btn-menu .sub   { font-size:clamp(.72rem,1.3vw,.98rem); font-weight:400; opacity:.65; }
+
+    .btn-start {
+      font-family:inherit; font-size:clamp(1.5rem,2.7vw,2.3rem); font-weight:600;
+      padding:clamp(.85rem,1.7vh,1.4rem) clamp(2.2rem,4vw,4.2rem);
+      border:3px solid rgba(255,255,255,.38); border-radius:50px;
+      background:linear-gradient(135deg,#9b59b6,#6c3483); color:#fff; cursor:pointer;
+      box-shadow:0 6px 0 rgba(0,0,0,.28); transition:transform .08s, box-shadow .08s;
+    }
+    .btn-start:active { transform:translateY(5px); box-shadow:0 1px 0 rgba(0,0,0,.28); }
+
+    /* renk aksanları */
+    .op-plus  { border-color:#6bcb77; color:#c5f5ca; }
+    .op-minus { border-color:#ff6b6b; color:#ffcaca; }
+    .op-mal   { border-color:#ffd740; color:#fff3c0; }
+    .op-div   { border-color:#4ecdc4; color:#b8f5f2; }
+    .op-mix   { border-color:#bb86fc; color:#e8d5ff; }
+    .d-easy   { border-color:#69f0ae; color:#c0fff0; }
+    .d-mid    { border-color:#ffd740; color:#fff3c0; }
+    .d-hard   { border-color:#ff7070; color:#ffe0e0; }
+
+    /* ── OYUN EKRANI ── */
+    #game-screen { flex-direction:column; }
+
+    .game-top-bar {
+      flex-shrink:0; height:clamp(38px,5.5vh,52px); width:100%;
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.35); border-bottom:3px solid var(--divider);
+      font-size:clamp(.9rem,1.5vw,1.3rem); font-weight:500; gap:.5rem;
+      color:var(--yellow); letter-spacing:.5px;
+    }
+
+    /* ── OYUNCU IZGARASI: kalın beyaz boşluk = net ayırıcı çizgi ── */
+    .players-grid {
+      flex:1; display:grid; overflow:hidden;
+      background: rgba(255,255,255,.65);   /* aradaki çizgi rengi */
+      gap: 6px;
+      padding: 6px;
+    }
+
+    .player-area {
+      display:flex; flex-direction:column;
+      /* arka plan rengi JS'de her oyuncu için ayrı ayarlanıyor */
+      overflow:hidden; position:relative;
+      border-radius:0;
+      border-top: 5px solid var(--pc, rgba(255,255,255,.4)); /* renk şeridi */
+    }
+
+    /* ── PA BAŞLIĞI ── */
+    .pa-header {
+      flex-shrink:0; display:flex; align-items:center; justify-content:space-between;
+      padding:.2rem clamp(.5rem,1.2vw,1rem);
+      border-bottom:2px solid rgba(255,255,255,.15);
+      height:clamp(34px,5vh,48px);
+    }
+    .pa-icon { font-size:clamp(1.2rem,2.3vw,2.1rem); line-height:1; }
+    .pa-prog {
+      display:flex; align-items:baseline; gap:.3rem;
+      font-size:clamp(1rem,1.8vw,1.7rem); font-weight:600; color:var(--yellow);
+    }
+    .pa-total { font-size:.68em; opacity:.55; font-weight:400; }
+
+    /* ── KUTU IZGARASI ── */
+    .boxes-grid {
+      flex:1; display:grid;
+      grid-template-columns:repeat(4,1fr);
+      grid-template-rows:repeat(3,1fr);
+      gap:clamp(3px,.5vw,6px);
+      padding:clamp(3px,.5vw,6px);
+    }
+
+    .box {
+      display:flex; align-items:center; justify-content:center;
+      background:rgba(255,255,255,.11);
+      border:2px solid rgba(255,255,255,.22);
+      border-radius:clamp(5px,.7vw,9px); cursor:pointer;
+      font-size:clamp(1.3rem,2.2vw,2.4rem); font-weight:600; color:#fff;
+      transition:background .2s, border-color .2s, transform .1s;
+      user-select:none; -webkit-user-select:none; touch-action:manipulation;
+      position:relative; overflow:hidden; min-height:0;
+      line-height:1;
+    }
+    .box::before {
+      content:''; position:absolute; top:8%; left:10%;
+      width:24%; height:24%; background:rgba(255,255,255,.22);
+      border-radius:50%; pointer-events:none;
+    }
+    .box:hover:not(.starred):not(.shake) {
+      background:rgba(255,255,255,.22); transform:scale(1.06);
+    }
+    .box.starred {
+      background:radial-gradient(circle at 35% 28%, var(--pc-light,#fff) 0%, var(--pc,#aaa) 80%);
+      border-color:var(--pc,#aaa);
+      box-shadow:0 0 12px var(--pc-glow,rgba(255,255,255,.3));
+      cursor:default;
+    }
+    .box.shake {
+      animation:shk .42s ease;
+      background:rgba(255,50,50,.42) !important;
+      border-color:rgba(255,80,80,.85) !important;
+    }
+    @keyframes shk {
+      0%,100%{transform:translateX(0)}
+      14% {transform:translateX(-7px)}
+      28% {transform:translateX(7px)}
+      42% {transform:translateX(-5px)}
+      57% {transform:translateX(5px)}
+      71% {transform:translateX(-3px)}
+      85% {transform:translateX(3px)}
+    }
+
+    /* ── SORU ALANI ── */
+    .pa-question {
+      flex-shrink:0; display:flex; align-items:center; justify-content:center;
+      height:clamp(38px,6.5vh,60px); border-top:2px solid rgba(255,255,255,.15);
+      font-size:clamp(1.1rem,2vw,2rem); font-weight:500;
+      text-shadow:2px 2px 0 rgba(0,0,0,.3); padding:0 .4rem;
+    }
+
+    /* flash overlay */
+    .pa-flash { position:absolute; inset:0; pointer-events:none; opacity:0; z-index:5; }
+    .pa-flash.correct { animation:fG .35s ease-out; }
+    .pa-flash.wrong   { animation:fR .35s ease-out; }
+    @keyframes fG {
+      0%  {opacity:0;background:rgba(105,240,174,0);}
+      25% {opacity:1;background:rgba(105,240,174,.28);}
+      100%{opacity:0;background:rgba(105,240,174,0);}
+    }
+    @keyframes fR {
+      0%  {opacity:0;background:rgba(255,70,70,0);}
+      25% {opacity:1;background:rgba(255,70,70,.32);}
+      100%{opacity:0;background:rgba(255,70,70,0);}
+    }
+
+    /* ── KAZANAN OVERLAY (ayrı sayfa yok, oyun alanı üstüne) ── */
+    #win-overlay {
+      display:none; position:absolute; inset:0; z-index:100;
+      background:rgba(8,3,24,.80); backdrop-filter:blur(6px);
+      flex-direction:column; align-items:center; justify-content:center;
+      gap:clamp(1rem,2.5vh,2rem); padding:2rem;
+    }
+    #win-overlay.active { display:flex; }
+
+    .win-banner {
+      font-size:clamp(2.2rem,5vw,4.5rem); font-weight:600;
+      text-shadow:3px 3px 0 rgba(0,0,0,.35); text-align:center;
+    }
+    .win-result-list {
+      display:flex; flex-direction:column; gap:.7rem;
+      width:100%; max-width:560px;
+    }
+    .result-row {
+      display:flex; align-items:center; gap:1rem;
+      background:rgba(255,255,255,.08); border:2px solid rgba(255,255,255,.18);
+      border-radius:16px; padding:.75rem 1.2rem;
+    }
+    .res-rank { font-size:clamp(1.2rem,2vw,1.9rem); width:2rem; text-align:center; }
+    .res-icon { font-size:clamp(1.5rem,2.6vw,2.4rem); }
+    .res-name { flex:1; font-size:clamp(1rem,1.8vw,1.6rem); font-weight:500; }
+    .res-info { font-size:clamp(.95rem,1.6vw,1.4rem); font-weight:500; color:var(--yellow); white-space:nowrap; }
+
+    .confetti {
+      position:absolute; width:10px; height:10px; border-radius:3px;
+      pointer-events:none; animation:cFall 3s linear infinite;
+    }
+    @keyframes cFall {
+      0%  {transform:translateY(-10vh) rotate(0deg); opacity:1;}
+      100%{transform:translateY(105vh) rotate(720deg); opacity:0;}
+    }
+  </style>
+</head>
+<body>
+
+<!-- EKRAN 1: BAŞLIK -->
+<div id="s1" class="screen menu-screen active">
+  <div class="title-icon">⭐</div>
+  <div class="game-title">Stern-Jagd</div>
+  <div class="game-subtitle">Wer sammelt alle Sterne zuerst?</div>
+  <button class="btn-start" onclick="showS('s2')">🎮 Spielen!</button>
+</div>
+
+<!-- EKRAN 2: OYUNCU SAYISI -->
+<div id="s2" class="screen menu-screen">
+  <div class="menu-label">Wie viele Spieler?</div>
+  <div class="btn-grid">
+    <button class="btn-menu" style="border-color:#FF6B9D88;" onclick="selP(2)">
+      🦁 🐯<span class="sub">2 Spieler</span>
+    </button>
+    <button class="btn-menu" style="border-color:#FFD93D88;" onclick="selP(3)">
+      🦁 🐯 🐸<span class="sub">3 Spieler</span>
+    </button>
+    <button class="btn-menu" style="border-color:#BB86FC88;" onclick="selP(4)">
+      🦁 🐯 🐸 🦊<span class="sub">4 Spieler</span>
+    </button>
+  </div>
+</div>
+
+<!-- EKRAN 3: HESAP TÜRÜ -->
+<div id="s3" class="screen menu-screen">
+  <div class="menu-label">Wähle eine Rechenart:</div>
+  <div class="btn-grid">
+    <button class="btn-menu op-plus"  onclick="selOp('+')">➕ Addition<span class="sub">Plusrechnen</span></button>
+    <button class="btn-menu op-minus" onclick="selOp('-')">➖ Subtraktion<span class="sub">Minusrechnen</span></button>
+    <button class="btn-menu op-mal"   onclick="selOp('*')">✖ Multiplikation<span class="sub">Einmaleins</span></button>
+    <button class="btn-menu op-div"   onclick="selOp('/')">÷ Division<span class="sub">Teilen</span></button>
+    <button class="btn-menu op-mix"   onclick="selOp('mix')" style="min-width:200px;">🔀 Gemischt<span class="sub">Alle 4 Rechenarten</span></button>
+  </div>
+</div>
+
+<!-- EKRAN 4: ZORLUK -->
+<div id="s4" class="screen menu-screen">
+  <div class="menu-label">Wähle die Schwierigkeit:</div>
+  <div class="btn-grid">
+    <button class="btn-menu d-easy" onclick="selDiff('easy')">
+      ⭐ Einfach<span class="sub">Bis 20 · kein Übergang</span>
+    </button>
+    <button class="btn-menu d-mid" onclick="selDiff('medium')">
+      ⭐⭐ Mittel<span class="sub">Zehnerzahlen · kein Übergang</span>
+    </button>
+    <button class="btn-menu d-hard" onclick="selDiff('hard')">
+      ⭐⭐⭐ Schwer<span class="sub">Bis 100 · mit Übergang</span>
+    </button>
+  </div>
+</div>
+
+<!-- OYUN EKRANI -->
+<div id="game-screen" class="screen">
+  <div class="game-top-bar">⭐ Stern-Jagd — Wer zuerst alle 12 Sterne hat, gewinnt!</div>
+  <div class="players-grid" id="players-grid"></div>
+
+  <!-- Kazanma: ayrı sayfa yok, buraya overlay olarak açılıyor -->
+  <div id="win-overlay">
+    <div class="win-banner" id="win-banner"></div>
+    <div class="win-result-list" id="win-result-list"></div>
+    <button class="btn-start" onclick="resetGame()">🔄 Nochmal spielen</button>
+  </div>
+</div>
+
+<script>
+  const ICONS  = ['🦁','🐯','🐸','🦊'];
+  const COLORS = ['#FF6B9D','#00C9A7','#FFD93D','#BB86FC'];
+  const LIGHTS = ['#ffb8d4','#80f0e0','#fff5a0','#e0c8ff'];
+  const GLOWS  = ['rgba(255,107,157,.55)','rgba(0,201,167,.55)','rgba(255,217,61,.55)','rgba(187,134,252,.55)'];
+  /* Her oyuncunun alan arka plan rengi — oyuncu renginin açık tonu */
+  const BGS    = ['rgba(255,107,157,.14)','rgba(0,201,167,.13)','rgba(255,217,61,.12)','rgba(187,134,252,.14)'];
+
+  let numP=2, cfg={op:'+', diff:'easy'};
+  let players=[], gameOver=false;
+  const ac=new(window.AudioContext||window.webkitAudioContext)();
+
+  function showS(id) {
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+  function selP(n)    { numP=n;    showS('s3'); }
+  function selOp(op)  { cfg.op=op; showS('s4'); }
+  function selDiff(d) { cfg.diff=d; startGame(); }
+
+  function snd(type) {
+    if(ac.state==='suspended') ac.resume();
+    const t=ac.currentTime;
+    if(type==='ding') {
+      const o=ac.createOscillator(), g=ac.createGain();
+      o.type='sine'; o.frequency.setValueAtTime(660,t); o.frequency.exponentialRampToValueAtTime(900,t+.18);
+      g.gain.setValueAtTime(.24,t); g.gain.linearRampToValueAtTime(0,t+.2);
+      o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+.22);
+    } else if(type==='buzz') {
+      const o=ac.createOscillator(), g=ac.createGain();
+      o.type='sawtooth'; o.frequency.setValueAtTime(190,t); o.frequency.exponentialRampToValueAtTime(75,t+.22);
+      g.gain.setValueAtTime(.2,t); g.gain.linearRampToValueAtTime(0,t+.24);
+      o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t+.26);
+    } else if(type==='fanfare') {
+      const m=ac.createGain(); m.gain.value=.4; m.connect(ac.destination);
+      function fn(f,s,d,tp='triangle',v=.7){
+        const o=ac.createOscillator(), g=ac.createGain();
+        o.type=tp; o.frequency.value=f; o.connect(g); g.connect(m);
+        const t0=t+s;
+        g.gain.setValueAtTime(0,t0); g.gain.linearRampToValueAtTime(v,t0+.02);
+        g.gain.setValueAtTime(v*.75,t0+d*.65); g.gain.linearRampToValueAtTime(0,t0+d);
+        o.start(t0); o.stop(t0+d+.08);
+      }
+      fn(523,.00,.10); fn(659,.09,.10); fn(784,.18,.10); fn(1047,.27,.35);
+      fn(784,.65,.12); fn(880,.77,.12); fn(1047,.89,.50);
+      fn(1319,1.42,.09); fn(1175,1.51,.09); fn(1047,1.60,.09); fn(880,1.69,.09); fn(1047,1.78,.80);
+    }
+  }
+
+  function genBoxNums(diff) {
+    const s=new Set();
+    while(s.size<12){
+      let n;
+      if(diff==='easy')        n=Math.floor(Math.random()*19)+2;
+      else if(diff==='medium') n=Math.random()<.45?(Math.floor(Math.random()*8)+2)*10:Math.floor(Math.random()*79)+11;
+      else                     n=Math.floor(Math.random()*96)+4;
+      s.add(n);
+    }
+    return [...s];
+  }
+
+  function genQ(target, op, diff) {
+    const wantOps=op==='mix'?['+','-','*','/']:[op];
+    const pool=[];
+    for(const o of wantOps){
+      if(o==='+')      pool.push('+');
+      else if(o==='-') pool.push('-');
+      else if(o==='*'){ for(let a=2;a<=10;a++) if(target%a===0&&target/a>=2&&target/a<=10){pool.push('*');break;} }
+      else if(o==='/'){ if([2,3,4,5,6,7,8,9,10].some(d=>target*d<=100)) pool.push('/'); }
+    }
+    if(!pool.length) pool.push('+');
+    const chosen=pool[Math.floor(Math.random()*pool.length)];
+    let n1,n2,sym;
+    if(chosen==='+'){
+      const hi=Math.max(1,target-1); n2=Math.floor(Math.random()*hi)+1; if(n2>=target)n2=1; n1=target-n2; sym='+';
+    } else if(chosen==='-'){
+      const maxN2=diff==='easy'?Math.min(10,25-target):Math.min(99-target,target);
+      n2=Math.floor(Math.random()*Math.max(1,maxN2))+1; n1=target+n2; sym='−';
+    } else if(chosen==='*'){
+      const pairs=[];
+      for(let a=2;a<=10;a++) if(target%a===0&&target/a>=2&&target/a<=10) pairs.push([a,target/a]);
+      let[a,b]=pairs[Math.floor(Math.random()*pairs.length)];
+      if(Math.random()<.5)[a,b]=[b,a]; [n1,n2]=[a,b]; sym='×';
+    } else {
+      const valD=[2,3,4,5,6,7,8,9,10].filter(d=>target*d<=100);
+      n2=valD[Math.floor(Math.random()*valD.length)]; n1=target*n2; sym='÷';
+    }
+    return {text:`${n1} ${sym} ${n2} = ?`, answer:target};
+  }
+
+  function startGame(){
+    gameOver=false;
+    document.getElementById('win-overlay').classList.remove('active');
+    document.querySelectorAll('.confetti').forEach(c=>c.remove());
+    players=[];
+    for(let i=0;i<numP;i++){
+      players.push({
+        id:i+1, icon:ICONS[i],
+        color:COLORS[i], light:LIGHTS[i], glow:GLOWS[i], bg:BGS[i],
+        boxes:genBoxNums(cfg.diff),
+        starred:Array(12).fill(false),
+        ok:0, q:null
+      });
+    }
+    buildGame();
+    players.forEach(p=>nextQ(p));
+    showS('game-screen');
+  }
+
+  function buildGame(){
+    const grid=document.getElementById('players-grid');
+    grid.innerHTML='';
+    /* Dikey düzen: 2P ve 3P için satırlar, 4P için 2×2 */
+    if(numP===2)      grid.style.cssText='grid-template-columns:1fr 1fr;grid-template-rows:1fr;';
+    else if(numP===3) grid.style.cssText='grid-template-columns:1fr 1fr 1fr;grid-template-rows:1fr;';
+    else              grid.style.cssText='grid-template-columns:1fr 1fr 1fr 1fr;grid-template-rows:1fr;';
+
+    players.forEach(p=>{
+      const area=document.createElement('div');
+      area.className='player-area'; area.id=`pa-${p.id}`;
+      area.style.setProperty('--pc',      p.color);
+      area.style.setProperty('--pc-light',p.light);
+      area.style.setProperty('--pc-glow', p.glow);
+      area.style.background = `linear-gradient(180deg, ${p.bg} 0%, rgba(26,15,64,.97) 60%)`;
+
+      const flash=document.createElement('div');
+      flash.className='pa-flash'; flash.id=`pf-${p.id}`;
+
+      const hdr=document.createElement('div');
+      hdr.className='pa-header';
+      hdr.style.borderLeft=`5px solid ${p.color}`;
+      hdr.innerHTML=`
+        <span class="pa-icon">${p.icon}</span>
+        <div class="pa-prog">
+          <span id="ps-${p.id}">⭐ 0</span>
+          <span class="pa-total">/ 12</span>
+        </div>`;
+
+      const bg=document.createElement('div');
+      bg.className='boxes-grid'; bg.id=`bg-${p.id}`;
+      p.boxes.forEach((num,idx)=>{
+        const box=document.createElement('div');
+        box.className='box'; box.id=`bx-${p.id}-${idx}`;
+        box.textContent=num;
+        box.addEventListener('click',()=>clickBox(p.id,idx));
+        bg.appendChild(box);
+      });
+
+      const q=document.createElement('div');
+      q.className='pa-question'; q.id=`pq-${p.id}`;
+      q.style.color=p.color;
+      q.textContent='…';
+
+      area.append(flash,hdr,bg,q);
+      grid.appendChild(area);
+    });
+  }
+
+  function nextQ(pl){
+    const free=pl.starred.reduce((a,v,i)=>(!v?[...a,i]:a),[]);
+    if(!free.length) return;
+    const tIdx=free[Math.floor(Math.random()*free.length)];
+    pl.q=genQ(pl.boxes[tIdx],cfg.op,cfg.diff);
+    document.getElementById(`pq-${pl.id}`).textContent=pl.q.text;
+  }
+
+  function clickBox(pId,idx){
+    if(gameOver) return;
+    const pl=players[pId-1];
+    if(pl.starred[idx]) return;
+    const box=document.getElementById(`bx-${pId}-${idx}`);
+    if(pl.boxes[idx]===pl.q.answer){
+      snd('ding');
+      pl.ok++; pl.starred[idx]=true;
+      box.classList.add('starred'); box.textContent='⭐';
+      const cnt=pl.starred.filter(v=>v).length;
+      document.getElementById(`ps-${pId}`).textContent=`⭐ ${cnt}`;
+      doFlash(pId,'correct');
+      if(pl.starred.every(v=>v)){ gameOver=true; setTimeout(()=>endGame(pl),420); return; }
+      nextQ(pl);
+    } else {
+      snd('buzz');
+      doFlash(pId,'wrong');
+      box.classList.add('shake');
+      setTimeout(()=>box.classList.remove('shake'),450);
+      nextQ(pl);
+    }
+  }
+
+  function doFlash(pId,type){
+    const el=document.getElementById(`pf-${pId}`);
+    el.className='pa-flash'; void el.offsetWidth;
+    el.className=`pa-flash ${type}`;
+  }
+
+  function endGame(winner){
+    snd('fanfare');
+    const banner=document.getElementById('win-banner');
+    banner.innerHTML=`${winner.icon} Gewonnen! 🎉`;
+    banner.style.color=winner.color;
+
+    const ranked=[...players].sort((a,b)=>b.starred.filter(v=>v).length-a.starred.filter(v=>v).length);
+    const medals=['🥇','🥈','🥉','4️⃣'];
+    const list=document.getElementById('win-result-list');
+    list.innerHTML='';
+    ranked.forEach((p,i)=>{
+      const stars=p.starred.filter(v=>v).length;
+      const row=document.createElement('div');
+      row.className='result-row';
+      row.style.borderColor=i===0?p.color:'rgba(255,255,255,.18)';
+      row.innerHTML=`
+        <span class="res-rank">${medals[i]}</span>
+        <span class="res-icon">${p.icon}</span>
+        <span class="res-name">Spieler ${p.id}</span>
+        <span class="res-info">⭐ ${stars}/12 &nbsp;·&nbsp; ✅ ${p.ok}</span>`;
+      list.appendChild(row);
+    });
+
+    spawnConfetti();
+    document.getElementById('win-overlay').classList.add('active');
+  }
+
+  function spawnConfetti(){
+    document.querySelectorAll('.confetti').forEach(c=>c.remove());
+    const gs=document.getElementById('game-screen');
+    ['#FF6B9D','#00C9A7','#FFD93D','#fff','#BB86FC'].forEach(col=>{
+      for(let i=0;i<10;i++){
+        const c=document.createElement('div');
+        c.className='confetti';
+        c.style.left=`${Math.random()*100}%`;
+        c.style.backgroundColor=col;
+        c.style.animationDuration=`${2+Math.random()*2}s`;
+        c.style.animationDelay=`${Math.random()*1.5}s`;
+        gs.appendChild(c);
+      }
+    });
+  }
+
+  function resetGame(){
+    document.querySelectorAll('.confetti').forEach(c=>c.remove());
+    document.getElementById('win-overlay').classList.remove('active');
+    showS('s1');
+  }
+</script>
+</body>
+</html>
